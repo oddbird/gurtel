@@ -39,5 +39,5 @@ setup(
     ],
     zip_safe=False,
     tests_require=["pytest>=2.3.4"],
-    install_requires=["Werkzeug>=0.8"],
+    install_requires=["Werkzeug>=0.8", "pytz"],
 )

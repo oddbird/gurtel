@@ -1,7 +1,10 @@
 Werkzeug==0.8.3
+pytz==2013b
 
 pytest==2.3.4
 py==1.4.13
 pytest-cov==1.6
 cov-core==1.7
 coverage==3.6
+
+pretend==0.7
