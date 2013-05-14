@@ -38,12 +38,13 @@ setup(
         "Programming Language :: Python :: 2.7",
     ],
     zip_safe=False,
-    tests_require=["pytest>=2.3.4"],
+    tests_require=["pytest>=2.3.4", "pretend>=0.7", "mock>=1.0"],
     install_requires=[
         "Werkzeug>=0.8",
         "webassets>=0.8",
         "rcssmin>=1.0",
-        "PyYAML>=3.10",
+        "PyYAML",
         "pytz",
+        "requests",
         ],
 )
