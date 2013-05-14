@@ -39,5 +39,11 @@ setup(
     ],
     zip_safe=False,
     tests_require=["pytest>=2.3.4"],
-    install_requires=["Werkzeug>=0.8", "pytz"],
+    install_requires=[
+        "Werkzeug>=0.8",
+        "webassets>=0.8",
+        "rcssmin>=1.0",
+        "PyYAML>=3.10",
+        "pytz",
+        ],
 )

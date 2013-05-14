@@ -1,5 +1,8 @@
 Werkzeug==0.8.3
 pytz==2013b
+webassets==0.8
+rcssmin==1.0.2
+PyYAML==3.10
 
 pytest==2.3.4
 py==1.4.13
