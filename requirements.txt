@@ -1,3 +1,5 @@
+-e .
+
 Werkzeug==0.8.3
 pytz==2013b
 webassets==0.8
