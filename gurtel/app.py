@@ -105,17 +105,19 @@ class GurtelApp(object):
                 logging_config, disable_existing_loggers=disable_existing)
 
 
-    def render(self, request, template_name, **context):
+    def render(self, request, template_name, context=None, mimetype='text/html'):
         """Request-aware template render."""
+        context = context or {}
         context['flash'] = request.flash.get_and_clear()
-        return self.render_template(template_name, **context)
+        return self.render_template(template_name, context, mimetype)
 
 
-    def render_template(self, template_name, **context):
-        """Render ``template_name`` with ``context``."""
+    def render_template(self, template_name, context=None, mimetype='text/html'):
+        """Render ``template_name`` with ``context`` and ``mimetype``."""
+        context = context or {}
         context['app'] = self
         tpl = self.jinja_env.get_template(template_name)
-        return Response(tpl.render(context), mimetype="text/html")
+        return Response(tpl.render(context), mimetype=mimetype)
 
 
     def make_absolute_url(self, url):

@@ -4,7 +4,7 @@ import mock
 from pretend import stub
 import pytest
 from werkzeug.routing import Map, Rule
-from werkzeug.test import Client
+from werkzeug.test import Client, EnvironBuilder
 from werkzeug.wrappers import Response
 
 from gurtel.app import redirect_if, GurtelApp
@@ -135,7 +135,7 @@ class GurtelTestApp(GurtelApp):
 
 
     def handle_thing(self, request, thing_id):
-        return self.render_template('thing.html', thing_id=thing_id)
+        return self.render_template('thing.html', {'thing_id': thing_id})
 
 
 
@@ -148,6 +148,14 @@ def app(request, config):
 def client(request, app):
     return Client(app, Response)
 
+
+@pytest.fixture
+def req(request, app):
+    environ = EnvironBuilder().get_environ()
+    req = app.request_class(environ)
+    req.session = {}
+
+    return req
 
 
 class TestGurtelApp(object):
@@ -206,14 +214,26 @@ class TestGurtelApp(object):
         assert not app.is_ssl
 
 
-    def test_render_flash(self, app):
-        """Adds flash messages to template context."""
-        app.render_template = mock.Mock()
-        request = mock.Mock()
-        app.render(request, 'splash.html')
-        context = app.render_template.call_args[1]
+    def test_render_custom_mime_type(self, app, req):
+        """Render can take a custom mime type."""
+        resp = app.render(req, 'text.txt', mimetype='text/plain')
 
-        assert context['flash'] is request.flash.get_and_clear.return_value
+        assert resp.mimetype == 'text/plain'
+
+
+    def test_render_template_custom_mime_type(self, app):
+        """Render template can take a custom mime type."""
+        resp = app.render_template('text.txt', mimetype='text/plain')
+
+        assert resp.mimetype == 'text/plain'
+
+
+    def test_render_flash(self, app, req):
+        """Adds flash messages to template context."""
+        req.flash.success('yay for you.')
+        resp = app.render(req, 'flash.html')
+
+        assert resp.data == '\n  yay for you.\n'
 
 
     def test_dispatch_and_render(self, client, app):
