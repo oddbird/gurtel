@@ -1,6 +1,6 @@
 from os.path import join, dirname
 
-from setuptools import setup, find_packages
+from setuptools import setup
 
 here = dirname(__file__)
 
@@ -25,7 +25,7 @@ setup(
     author="Carl Meyer",
     author_email="carl@oddbird.net",
     url="https://github.com/carljm/gurtel/",
-    packages=find_packages(),
+    packages=['gurtel', 'gurtel.oauth'],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Environment :: Web Environment",
@@ -41,6 +41,7 @@ setup(
     tests_require=["pytest>=2.3.4", "pretend>=0.7", "mock>=1.0"],
     install_requires=[
         "Werkzeug>=0.8",
+        "Jinja2>=2.6",
         "webassets>=0.8",
         "rcssmin>=1.0",
         "PyYAML",

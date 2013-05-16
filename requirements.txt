@@ -1,6 +1,8 @@
 -e .
 
 Werkzeug==0.8.3
+Jinja2==2.6
+
 pytz==2013b
 webassets==0.8
 rcssmin==1.0.2

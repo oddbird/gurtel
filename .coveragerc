@@ -1,0 +1,5 @@
+[run]
+branch = True
+omit =
+  gurtel/pytest_plugin.py
+  gurtel/__init__.py
