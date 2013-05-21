@@ -179,7 +179,7 @@ class GurtelApp(object):
 
 
     def wsgi_app(self, environ, start_response):
-        """WSGI entry point. Call ``dispatch()``, handle sessions."""
+        """WSGI entry point. Call ``dispatch()``, handle middleware."""
         request = self.request_class(environ)
         for middleware in self.middlewares:
             process_request = getattr(middleware, 'process_request', None)
