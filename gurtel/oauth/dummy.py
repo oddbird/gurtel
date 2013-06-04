@@ -1,6 +1,4 @@
 """Dummy OAuth handler for testing and local development."""
-from werkzeug.wrappers import Response
-
 from .base import OAuthBase
 
 
@@ -52,16 +50,20 @@ class DummyOAuthApp(object):
 
     def __call__(self, environ, start_response):
         if environ['PATH_INFO'] == DUMMY_FORM_URL:
-            response = Response(
-                USER_FORM % {'redirect_uri': self.redirect_uri},
-                mimetype='text/html',
-                )
-            return response(environ, start_response)
+            response = USER_FORM % {'redirect_uri': self.redirect_uri}
+            response = response.encode('utf-8')
+            headers = [
+                ('Content-Type', 'text/html; charset=utf-8'),
+                ('Content-Length', str(len(response)))
+                ]
+            status = '200 OK'
+            start_response(status, headers)
+            return [response]
         return self.wrapped_app(environ, start_response)
 
 
 
-USER_FORM = """
+USER_FORM = u"""
 <html>
 <head>
 <title>Dummy OAuth login form</title>
