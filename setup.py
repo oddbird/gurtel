@@ -25,7 +25,7 @@ setup(
     author="Carl Meyer",
     author_email="carl@oddbird.net",
     url="https://github.com/carljm/gurtel/",
-    packages=['gurtel', 'gurtel.oauth'],
+    packages=['gurtel'],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Environment :: Web Environment",
