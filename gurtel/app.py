@@ -65,7 +65,7 @@ class GurtelApp(object):
         self.db = db_class(config['database.uri'])
 
         static_dir = os.path.join(base_dir, 'static')
-        static_url = '/static/'
+        static_url = config.get('assets.url', '/static/')
 
         self.jinja_env = Environment(
             loader=FileSystemLoader(os.path.join(base_dir, 'templates')),

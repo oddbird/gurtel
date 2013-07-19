@@ -76,6 +76,13 @@ class TestGurtelAppConfig(object):
         assert app.server_host == 'example.com'
 
 
+    def test_static_url(self):
+        """Static url can be passed in from config."""
+        app = self.get_app({'assets.url': 'https://example.com'})
+
+        assert app.assets_env.url == 'https://example.com'
+
+
     @mock.patch('gurtel.app.DebuggedApplication')
     @pytest.mark.parametrize('tf', [True, False])
     def test_debugger(self, mock_DebuggedApplication, tf):
