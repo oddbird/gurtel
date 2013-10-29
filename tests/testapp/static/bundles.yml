@@ -1,0 +1,4 @@
+css:
+    output: out.css
+    contents:
+        - in.css
