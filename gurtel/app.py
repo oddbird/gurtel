@@ -1,4 +1,4 @@
-from functools import wraps
+from functools import wraps, partial
 import logging
 import logging.config
 import os
@@ -52,7 +52,7 @@ class GurtelApp(object):
         self.config = config
 
         self.middlewares = [
-            session.SessionMiddleware(),
+            session.session_middleware,
             ]
 
         self.base_url = config.get('app.base_url', 'http://localhost')
@@ -181,15 +181,12 @@ class GurtelApp(object):
     def wsgi_app(self, environ, start_response):
         """WSGI entry point. Call ``dispatch()``, handle middleware."""
         request = self.request_class(environ)
-        for middleware in self.middlewares:
-            process_request = getattr(middleware, 'process_request', None)
-            if process_request:
-                process_request(self, request)
-        response = self.dispatch(request)
+        request.app = self
+        response_callable = self.dispatch
         for middleware in reversed(self.middlewares):
-            process_response = getattr(middleware, 'process_response', None)
-            if process_response:
-                process_response(self, request, response)
+            response_callable = partial(
+                middleware, response_callable=response_callable)
+        response = response_callable(request)
         return response(environ, start_response)
 
 

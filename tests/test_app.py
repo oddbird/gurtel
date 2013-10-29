@@ -248,12 +248,3 @@ class TestGurtelApp(object):
         resp = client.get('/foo/')
 
         assert resp.status_code == 404
-
-
-    def test_incomplete_middleware(self, client, app):
-        """Can handle middleware without process_* methods."""
-        class DummyMiddleware(object): pass
-
-        app.middlewares.append(DummyMiddleware())
-
-        client.get('/')
