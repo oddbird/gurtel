@@ -1,19 +1,13 @@
 from functools import wraps, partial
-import logging
-import logging.config
 import os
 import urlparse
 
-from gurtel.assets import get_bundles
-from gurtel import flash, session
-from jinja2 import Environment, FileSystemLoader
-from webassets import Environment as AssetsEnvironment
-from webassets.ext.jinja2 import AssetsExtension
+from gurtel import assets, flash, session, templates
 from werkzeug.debug import DebuggedApplication
 from werkzeug.exceptions import HTTPException
 from werkzeug.routing import Map
 from werkzeug.utils import cached_property, redirect
-from werkzeug.wrappers import Response, Request as WerkzeugRequest
+from werkzeug.wrappers import Request as WerkzeugRequest
 from werkzeug.wsgi import SharedDataMiddleware
 
 
@@ -62,62 +56,23 @@ class GurtelApp(object):
 
         self.secret_key = config['app.secret_key']
 
-        self.db = db_class(config['database.uri'])
-
-        static_dir = os.path.join(base_dir, 'static')
-        static_url = '/static/'
-
-        self.jinja_env = Environment(
-            loader=FileSystemLoader(os.path.join(base_dir, 'templates')),
-            autoescape=True,
-            extensions=[AssetsExtension],
+        self.assets = assets.AssetHandler(
+            static_dir=os.path.join(base_dir, 'static'),
+            static_url='/static/',
+            minify=config.getbool('assets.minify', True),
             )
-        self.assets_env = AssetsEnvironment(
-            static_dir,
-            static_url,
-            debug=not config.getbool('assets.minify', True),
-            )
-        self.assets_env.register(
-            get_bundles(os.path.join(static_dir, 'bundles.yml')))
-        self.jinja_env.assets_environment = self.assets_env
 
-        self.url_map = Map()
+        self.tpl = templates.TemplateRenderer(
+            template_dir=os.path.join(base_dir, 'templates'),
+            assets=self.assets,
+            )
 
         if config.getbool('app.debugger', False):
             self.wsgi_app = DebuggedApplication(self.wsgi_app, evalex=True)
 
-        if config.getbool('app.serve_static', False) and static_dir:
+        if config.getbool('app.serve_static', False) and self.assets.dir:
             self.wsgi_app = SharedDataMiddleware(
-                self.wsgi_app, {static_url: static_dir})
-
-
-    def configure_logging(self, disable_existing=False):
-        """
-        Set up loggers according to app configuration.
-
-        Since this impacts global state, we don't do it by default in app init;
-        caller has to explicitly request it.
-
-        """
-        logging_config = self.config.getpath('app.logging', None)
-        if logging_config is not None:
-            logging.config.fileConfig(
-                logging_config, disable_existing_loggers=disable_existing)
-
-
-    def render(self, request, template_name, context=None, mimetype='text/html'):
-        """Request-aware template render."""
-        context = context or {}
-        context['flash'] = request.flash.get_and_clear()
-        return self.render_template(template_name, context, mimetype)
-
-
-    def render_template(self, template_name, context=None, mimetype='text/html'):
-        """Render ``template_name`` with ``context`` and ``mimetype``."""
-        context = context or {}
-        context['app'] = self
-        tpl = self.jinja_env.get_template(template_name)
-        return Response(tpl.render(context), mimetype=mimetype)
+                self.wsgi_app, {self.assets.url: self.assets.dir})
 
 
     def make_absolute_url(self, url):
