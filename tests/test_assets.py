@@ -14,18 +14,15 @@ def static_dir(testapp_base_dir):
 
 @pytest.fixture
 def handler(static_dir):
-    return assets.AssetHandler(
-        static_dir=static_dir,
-        static_url='/static/',
-        minify=False,
-        )
+    return assets.AssetHandler(static_dir, '/static/', minify=False)
+
 
 
 class TestAssetHandler(object):
     def test_assets_env_config(self, handler, static_dir):
         """Instantiates and configures a webassets Environment."""
-        assert handler.assets_env.directory == static_dir
-        assert handler.assets_env.url == '/static/'
+        assert handler.directory == handler.assets_env.directory == static_dir
+        assert handler.url == handler.assets_env.url == '/static/'
         assert handler.assets_env.config['debug']
         assert 'css' in handler.assets_env
 

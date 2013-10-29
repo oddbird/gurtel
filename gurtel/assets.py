@@ -16,14 +16,16 @@ class AssetHandler(object):
     asset bundles described in ``static_dir/bundles.yml``.
 
     """
-    def __init__(self, static_dir, static_url, minify=True):
+    def __init__(self, directory, url, minify=True):
+        self.directory = directory
+        self.url = url
         self.assets_env = Environment(
-            static_dir,
-            static_url,
+            directory,
+            url,
             debug=not minify,
             )
         self.assets_env.register(
-            get_bundles(os.path.join(static_dir, 'bundles.yml')))
+            get_bundles(os.path.join(directory, 'bundles.yml')))
 
 
 
