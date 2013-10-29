@@ -12,7 +12,7 @@ class TemplateRenderer(object):
             extensions=[AssetsExtension] if asset_handler else [],
             )
         if asset_handler:
-            self.jinja_env.assets_environment = self.asset_handler.assets_env
+            self.jinja_env.assets_environment = asset_handler.assets_env
         self.context_processors = context_processors or []
 
 
