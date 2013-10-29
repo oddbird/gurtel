@@ -2,6 +2,9 @@
 from werkzeug.utils import cached_property
 
 
+def context_processor(request):
+    return {'flash': request.flash.get_and_clear()}
+
 
 class FlashRequestMixin(object):
     """
