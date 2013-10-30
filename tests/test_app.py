@@ -1,14 +1,14 @@
-import os
-
 import mock
 from pretend import stub
 import pytest
-from werkzeug.routing import Map, Rule
 from werkzeug.test import Client, EnvironBuilder
 from werkzeug.wrappers import Response
 
 from gurtel.app import redirect_if, GurtelApp
 from gurtel.config import Config
+
+from .conftest import TESTAPP_BASE_DIR
+
 
 
 class FakeApp(object):
@@ -19,8 +19,6 @@ class FakeApp(object):
     def redirect_to(self, redirect_to):
         self.redirects.append(redirect_to)
 
-
-TESTAPP_BASE_DIR = os.path.join(os.path.dirname(__file__), 'testapp')
 
 
 class TestRedirectIf(object):
@@ -60,13 +58,6 @@ class TestRedirectIf(object):
 
 class TestGurtelAppConfig(object):
     """Tests for configuration of Gurtel app."""
-    def test_db_uri(self):
-        """Database URI passed through app to Database."""
-        db_class = lambda db_uri: stub(uri=db_uri)
-        app = self.get_app({'database.uri': 'sqlite:///'}, db_class)
-
-        assert app.db.uri == 'sqlite:///'
-
     def test_base_url(self):
         """Base url passed in from config."""
         app = self.get_app({'app.base_url': 'https://example.com'})
@@ -94,59 +85,23 @@ class TestGurtelAppConfig(object):
         assert bool(mock_SharedDataMiddleware.call_count) == tf
 
 
-    @mock.patch('logging.config.fileConfig')
-    def test_logging(self, mock_fileConfig):
-        """Configures logging if app.logging config key found."""
-        app = self.get_app({'app.logging': 'logging.ini'})
-        app.configure_logging()
-
-        mock_fileConfig.assert_called_once_with(
-            'logging.ini',
-            disable_existing_loggers=False,
-            )
-
-
-    @mock.patch('logging.config.fileConfig')
-    def test_no_logging(self, mock_fileConfig):
-        """Does not configure logging if no config key found."""
-        app = self.get_app({})
-        app.configure_logging()
-
-        assert mock_fileConfig.call_count == 0
-
-
-    def get_app(self, config_dict, db_class=None):
+    def get_app(self, config_dict):
         """Shortcut for creating app with given config data."""
         config_dict.setdefault('app.secret_key', 'secret')
-        config_dict.setdefault('database.uri', 'sqlite:///')
-        if db_class is None:
-            db_class = lambda db_uri: None
-        return GurtelApp(Config(config_dict), TESTAPP_BASE_DIR, db_class)
-
-
-class GurtelTestApp(GurtelApp):
-    def __init__(self, config):
-        super(GurtelTestApp, self).__init__(
-            config, TESTAPP_BASE_DIR, lambda db_uri: None)
-
-        self.url_map = Map([
-                Rule(r'/thing/<int:thing_id>/', endpoint='thing'),
-                ])
-
-
-    def handle_thing(self, request, thing_id):
-        return self.render_template('thing.html', {'thing_id': thing_id})
+        return GurtelApp(Config(config_dict), TESTAPP_BASE_DIR)
 
 
 
 @pytest.fixture
-def app(request, config):
-    return GurtelTestApp(config)
+def app(request, config, map_dispatcher):
+    return GurtelApp(config, TESTAPP_BASE_DIR, map_dispatcher)
+
 
 
 @pytest.fixture
 def client(request, app):
     return Client(app, Response)
+
 
 
 @pytest.fixture
@@ -212,28 +167,6 @@ class TestGurtelApp(object):
     def test_is_not_ssl(self, app):
         """If base_url scheme is not https, ``is_ssl`` is ``False``."""
         assert not app.is_ssl
-
-
-    def test_render_custom_mime_type(self, app, req):
-        """Render can take a custom mime type."""
-        resp = app.render(req, 'text.txt', mimetype='text/plain')
-
-        assert resp.mimetype == 'text/plain'
-
-
-    def test_render_template_custom_mime_type(self, app):
-        """Render template can take a custom mime type."""
-        resp = app.render_template('text.txt', mimetype='text/plain')
-
-        assert resp.mimetype == 'text/plain'
-
-
-    def test_render_flash(self, app, req):
-        """Adds flash messages to template context."""
-        req.flash.success('yay for you.')
-        resp = app.render(req, 'flash.html')
-
-        assert resp.data == '\n  yay for you.\n'
 
 
     def test_dispatch_and_render(self, client, app):
