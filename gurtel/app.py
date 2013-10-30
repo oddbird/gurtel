@@ -28,10 +28,10 @@ def redirect_if(request_test, redirect_to):
     """
     def _decorator(func):
         @wraps(func)
-        def _inner(app, request, *args, **kwargs):
+        def _inner(request, *args, **kwargs):
             if not request_test(request):
-                return app.redirect_to(redirect_to)
-            return func(app, request, *args, **kwargs)
+                return request.app.redirect_to(redirect_to)
+            return func(request, *args, **kwargs)
 
         return _inner
 

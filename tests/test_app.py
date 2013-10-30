@@ -24,9 +24,10 @@ class FakeApp(object):
 class TestRedirectIf(object):
     def test_redirect(self):
         """If request fails test, redirects."""
-        app = self.make_app(redirect_if(lambda req: False, 'login'))
+        app = FakeApp()
+        h = self.make_handler(redirect_if(lambda req: False, 'login'))
 
-        app.handler(None, 1, foo=2)
+        h(stub(app=app), 1, foo=2)
 
         assert app.redirects == ['login']
         assert app.handled == []
@@ -34,26 +35,22 @@ class TestRedirectIf(object):
 
     def test_no_redirect(self):
         """If request passes test, does not redirect."""
-        app = self.make_app(redirect_if(lambda req: True, 'login'))
+        app = FakeApp()
+        h = self.make_handler(redirect_if(lambda req: True, 'login'))
 
-        req = stub()
-
-        app.handler(req, 1, foo=2)
+        h(stub(app=app), 1, foo=2)
 
         assert app.redirects == []
-        assert app.handled == [((req, 1), {'foo': 2})]
+        assert app.handled == [((1, ), {'foo': 2})]
 
 
-    def make_app(self, deco):
-        """Make a fake app with decorated handler method."""
-        class App(FakeApp):
-            @deco
-            def handler(self, *a, **kw):
-                self.handled.append((a, kw))
+    def make_handler(self, deco):
+        """Return a decorated handler function."""
+        @deco
+        def handler(request, *a, **kw):
+            request.app.handled.append((a, kw))
 
-        app = App()
-
-        return app
+        return handler
 
 
 class TestGurtelAppConfig(object):
