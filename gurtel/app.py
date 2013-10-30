@@ -47,12 +47,14 @@ class Request(WerkzeugRequest, flash.FlashRequestMixin):
 class GurtelApp(object):
     """A Gurtel WSGI application."""
     def __init__(self, config, base_dir, dispatcher=None,
-                 request_class=Request, middlewares=None):
+                 request_class=Request, middlewares=None,
+                 context_processors=None):
         self.config = config
         self.base_dir = base_dir
         self.dispatcher = dispatcher or dispatch.NullDispatcher()
         self.request_class = request_class
-        self.middlewares = middlewares or [session.session_middleware]
+        self.middlewares = list(
+            middlewares or []) + [session.session_middleware]
 
         self.base_url = config.get('app.base_url', 'http://localhost')
         bits = urlparse.urlparse(self.base_url)
@@ -67,10 +69,12 @@ class GurtelApp(object):
             minify=config.getbool('assets.minify', True),
             )
 
+        context_processors = list(
+            context_processors or []) + [flash.context_processor]
         self.tpl = templates.TemplateRenderer(
             template_dir=os.path.join(base_dir, 'templates'),
             asset_handler=self.assets,
-            context_processors=[flash.context_processor],
+            context_processors=context_processors,
             )
 
         if config.getbool('app.debugger', False):
