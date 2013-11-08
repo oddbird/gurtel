@@ -1,14 +1,14 @@
-import os
-
 import mock
 from pretend import stub
 import pytest
-from werkzeug.routing import Map, Rule
 from werkzeug.test import Client, EnvironBuilder
 from werkzeug.wrappers import Response
 
 from gurtel.app import redirect_if, GurtelApp
 from gurtel.config import Config
+
+from .conftest import TESTAPP_BASE_DIR
+
 
 
 class FakeApp(object):
@@ -20,15 +20,14 @@ class FakeApp(object):
         self.redirects.append(redirect_to)
 
 
-TESTAPP_BASE_DIR = os.path.join(os.path.dirname(__file__), 'testapp')
-
 
 class TestRedirectIf(object):
     def test_redirect(self):
         """If request fails test, redirects."""
-        app = self.make_app(redirect_if(lambda req: False, 'login'))
+        app = FakeApp()
+        h = self.make_handler(redirect_if(lambda req: False, 'login'))
 
-        app.handler(None, 1, foo=2)
+        h(stub(app=app), 1, foo=2)
 
         assert app.redirects == ['login']
         assert app.handled == []
@@ -36,37 +35,26 @@ class TestRedirectIf(object):
 
     def test_no_redirect(self):
         """If request passes test, does not redirect."""
-        app = self.make_app(redirect_if(lambda req: True, 'login'))
+        app = FakeApp()
+        h = self.make_handler(redirect_if(lambda req: True, 'login'))
 
-        req = stub()
-
-        app.handler(req, 1, foo=2)
+        h(stub(app=app), 1, foo=2)
 
         assert app.redirects == []
-        assert app.handled == [((req, 1), {'foo': 2})]
+        assert app.handled == [((1, ), {'foo': 2})]
 
 
-    def make_app(self, deco):
-        """Make a fake app with decorated handler method."""
-        class App(FakeApp):
-            @deco
-            def handler(self, *a, **kw):
-                self.handled.append((a, kw))
+    def make_handler(self, deco):
+        """Return a decorated handler function."""
+        @deco
+        def handler(request, *a, **kw):
+            request.app.handled.append((a, kw))
 
-        app = App()
-
-        return app
+        return handler
 
 
 class TestGurtelAppConfig(object):
     """Tests for configuration of Gurtel app."""
-    def test_db_uri(self):
-        """Database URI passed through app to Database."""
-        db_class = lambda db_uri: stub(uri=db_uri)
-        app = self.get_app({'database.uri': 'sqlite:///'}, db_class)
-
-        assert app.db.uri == 'sqlite:///'
-
     def test_base_url(self):
         """Base url passed in from config."""
         app = self.get_app({'app.base_url': 'https://example.com'})
@@ -80,7 +68,7 @@ class TestGurtelAppConfig(object):
         """Static url can be passed in from config."""
         app = self.get_app({'assets.url': 'https://example.com'})
 
-        assert app.assets_env.url == 'https://example.com'
+        assert app.assets.url == 'https://example.com'
 
 
     @mock.patch('gurtel.app.DebuggedApplication')
@@ -101,59 +89,23 @@ class TestGurtelAppConfig(object):
         assert bool(mock_SharedDataMiddleware.call_count) == tf
 
 
-    @mock.patch('logging.config.fileConfig')
-    def test_logging(self, mock_fileConfig):
-        """Configures logging if app.logging config key found."""
-        app = self.get_app({'app.logging': 'logging.ini'})
-        app.configure_logging()
-
-        mock_fileConfig.assert_called_once_with(
-            'logging.ini',
-            disable_existing_loggers=False,
-            )
-
-
-    @mock.patch('logging.config.fileConfig')
-    def test_no_logging(self, mock_fileConfig):
-        """Does not configure logging if no config key found."""
-        app = self.get_app({})
-        app.configure_logging()
-
-        assert mock_fileConfig.call_count == 0
-
-
-    def get_app(self, config_dict, db_class=None):
+    def get_app(self, config_dict):
         """Shortcut for creating app with given config data."""
         config_dict.setdefault('app.secret_key', 'secret')
-        config_dict.setdefault('database.uri', 'sqlite:///')
-        if db_class is None:
-            db_class = lambda db_uri: None
-        return GurtelApp(Config(config_dict), TESTAPP_BASE_DIR, db_class)
-
-
-class GurtelTestApp(GurtelApp):
-    def __init__(self, config):
-        super(GurtelTestApp, self).__init__(
-            config, TESTAPP_BASE_DIR, lambda db_uri: None)
-
-        self.url_map = Map([
-                Rule(r'/thing/<int:thing_id>/', endpoint='thing'),
-                ])
-
-
-    def handle_thing(self, request, thing_id):
-        return self.render_template('thing.html', {'thing_id': thing_id})
+        return GurtelApp(Config(config_dict), TESTAPP_BASE_DIR)
 
 
 
 @pytest.fixture
-def app(request, config):
-    return GurtelTestApp(config)
+def app(request, config, map_dispatcher):
+    return GurtelApp(config, TESTAPP_BASE_DIR, map_dispatcher)
+
 
 
 @pytest.fixture
 def client(request, app):
     return Client(app, Response)
+
 
 
 @pytest.fixture
@@ -221,28 +173,6 @@ class TestGurtelApp(object):
         assert not app.is_ssl
 
 
-    def test_render_custom_mime_type(self, app, req):
-        """Render can take a custom mime type."""
-        resp = app.render(req, 'text.txt', mimetype='text/plain')
-
-        assert resp.mimetype == 'text/plain'
-
-
-    def test_render_template_custom_mime_type(self, app):
-        """Render template can take a custom mime type."""
-        resp = app.render_template('text.txt', mimetype='text/plain')
-
-        assert resp.mimetype == 'text/plain'
-
-
-    def test_render_flash(self, app, req):
-        """Adds flash messages to template context."""
-        req.flash.success('yay for you.')
-        resp = app.render(req, 'flash.html')
-
-        assert resp.data == '\n  yay for you.\n'
-
-
     def test_dispatch_and_render(self, client, app):
         """Can dispatch to a URL, render template, return response."""
         resp = client.get(app.url_for('thing', thing_id=3))
@@ -255,12 +185,3 @@ class TestGurtelApp(object):
         resp = client.get('/foo/')
 
         assert resp.status_code == 404
-
-
-    def test_incomplete_middleware(self, client, app):
-        """Can handle middleware without process_* methods."""
-        class DummyMiddleware(object): pass
-
-        app.middlewares.append(DummyMiddleware())
-
-        client.get('/')

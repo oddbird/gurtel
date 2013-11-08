@@ -1,19 +1,12 @@
-from functools import wraps
-import logging
-import logging.config
+from functools import wraps, partial
 import os
 import urlparse
 
-from gurtel.assets import get_bundles
-from gurtel import flash, session
-from jinja2 import Environment, FileSystemLoader
-from webassets import Environment as AssetsEnvironment
-from webassets.ext.jinja2 import AssetsExtension
+from gurtel import assets, dispatch, flash, session, templates
 from werkzeug.debug import DebuggedApplication
 from werkzeug.exceptions import HTTPException
-from werkzeug.routing import Map
 from werkzeug.utils import cached_property, redirect
-from werkzeug.wrappers import Response, Request as WerkzeugRequest
+from werkzeug.wrappers import Request as WerkzeugRequest
 from werkzeug.wsgi import SharedDataMiddleware
 
 
@@ -35,10 +28,10 @@ def redirect_if(request_test, redirect_to):
     """
     def _decorator(func):
         @wraps(func)
-        def _inner(app, request, *args, **kwargs):
+        def _inner(request, *args, **kwargs):
             if not request_test(request):
-                return app.redirect_to(redirect_to)
-            return func(app, request, *args, **kwargs)
+                return request.app.redirect_to(redirect_to)
+            return func(request, *args, **kwargs)
 
         return _inner
 
@@ -46,14 +39,22 @@ def redirect_if(request_test, redirect_to):
 
 
 
-class GurtelApp(object):
-    """Base class for a Gurtel WSGI application."""
-    def __init__(self, config, base_dir, db_class):
-        self.config = config
+class Request(WerkzeugRequest, flash.FlashRequestMixin):
+    pass
 
-        self.middlewares = [
-            session.SessionMiddleware(),
-            ]
+
+
+class GurtelApp(object):
+    """A Gurtel WSGI application."""
+    def __init__(self, config, base_dir, dispatcher=None,
+                 request_class=Request, middlewares=None,
+                 context_processors=None):
+        self.config = config
+        self.base_dir = base_dir
+        self.dispatcher = dispatcher or dispatch.NullDispatcher()
+        self.request_class = request_class
+        self.middlewares = list(
+            middlewares or []) + [session.session_middleware]
 
         self.base_url = config.get('app.base_url', 'http://localhost')
         bits = urlparse.urlparse(self.base_url)
@@ -62,62 +63,26 @@ class GurtelApp(object):
 
         self.secret_key = config['app.secret_key']
 
-        self.db = db_class(config['database.uri'])
-
-        static_dir = os.path.join(base_dir, 'static')
-        static_url = config.get('assets.url', '/static/')
-
-        self.jinja_env = Environment(
-            loader=FileSystemLoader(os.path.join(base_dir, 'templates')),
-            autoescape=True,
-            extensions=[AssetsExtension],
+        self.assets = assets.AssetHandler(
+            directory=os.path.join(base_dir, 'static'),
+            url=config.get('assets.url', '/static/'),
+            minify=config.getbool('assets.minify', True),
             )
-        self.assets_env = AssetsEnvironment(
-            static_dir,
-            static_url,
-            debug=not config.getbool('assets.minify', True),
-            )
-        self.assets_env.register(
-            get_bundles(os.path.join(static_dir, 'bundles.yml')))
-        self.jinja_env.assets_environment = self.assets_env
 
-        self.url_map = Map()
+        context_processors = list(
+            context_processors or []) + [flash.context_processor]
+        self.tpl = templates.TemplateRenderer(
+            template_dir=os.path.join(base_dir, 'templates'),
+            asset_handler=self.assets,
+            context_processors=context_processors,
+            )
 
         if config.getbool('app.debugger', False):
             self.wsgi_app = DebuggedApplication(self.wsgi_app, evalex=True)
 
-        if config.getbool('app.serve_static', False) and static_dir:
+        if config.getbool('app.serve_static', False):
             self.wsgi_app = SharedDataMiddleware(
-                self.wsgi_app, {static_url: static_dir})
-
-
-    def configure_logging(self, disable_existing=False):
-        """
-        Set up loggers according to app configuration.
-
-        Since this impacts global state, we don't do it by default in app init;
-        caller has to explicitly request it.
-
-        """
-        logging_config = self.config.getpath('app.logging', None)
-        if logging_config is not None:
-            logging.config.fileConfig(
-                logging_config, disable_existing_loggers=disable_existing)
-
-
-    def render(self, request, template_name, context=None, mimetype='text/html'):
-        """Request-aware template render."""
-        context = context or {}
-        context['flash'] = request.flash.get_and_clear()
-        return self.render_template(template_name, context, mimetype)
-
-
-    def render_template(self, template_name, context=None, mimetype='text/html'):
-        """Render ``template_name`` with ``context`` and ``mimetype``."""
-        context = context or {}
-        context['app'] = self
-        tpl = self.jinja_env.get_template(template_name)
-        return Response(tpl.render(context), mimetype=mimetype)
+                self.wsgi_app, {self.assets.url: self.assets.directory})
 
 
     def make_absolute_url(self, url):
@@ -143,8 +108,7 @@ class GurtelApp(object):
 
     def url_for(self, endpoint, **kwargs):
         """Build a URL for an endpoint and args."""
-        adapter = self.url_map.bind(self.server_host)
-        return adapter.build(endpoint, kwargs)
+        return self.dispatcher.url_for(self.server_host, endpoint, **kwargs)
 
 
     @cached_property
@@ -153,43 +117,18 @@ class GurtelApp(object):
         return self.server_scheme == 'https'
 
 
-    def get_request_class(self):
-        """Construct and return Request subclass for this app."""
-        class Request(WerkzeugRequest, flash.FlashRequestMixin):
-            pass
-
-        return Request
-
-
-    @cached_property
-    def request_class(self):
-        """Request subclass for this app."""
-        return self.get_request_class()
-
-
-    def dispatch(self, request):
-        """Dispatch request according to URL map, return response."""
-        adapter = self.url_map.bind_to_environ(request)
-        try:
-            endpoint, args = adapter.match()
-            handler = getattr(self, 'handle_' + endpoint)
-            return handler(request, **args)
-        except HTTPException as e:
-            return e
-
-
     def wsgi_app(self, environ, start_response):
         """WSGI entry point. Call ``dispatch()``, handle middleware."""
         request = self.request_class(environ)
-        for middleware in self.middlewares:
-            process_request = getattr(middleware, 'process_request', None)
-            if process_request:
-                process_request(self, request)
-        response = self.dispatch(request)
+        request.app = self
+        response_callable = self.dispatcher.dispatch
         for middleware in reversed(self.middlewares):
-            process_response = getattr(middleware, 'process_response', None)
-            if process_response:
-                process_response(self, request, response)
+            response_callable = partial(
+                middleware, response_callable=response_callable)
+        try:
+            response = response_callable(request)
+        except HTTPException as e:
+            response = e
         return response(environ, start_response)
 
 

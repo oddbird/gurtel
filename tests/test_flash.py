@@ -1,6 +1,16 @@
+from pretend import stub
 import pytest
 
 from gurtel import flash
+
+
+def test_context_processor():
+    """Context processor returns and clears flash messages."""
+    msgs = [{'message': 'foo'}]
+    req = stub(flash=flash.Flash({'flash': msgs[:]}))
+    result = flash.context_processor(req)
+    assert result.keys() == ['flash']
+    assert list(result['flash']) == msgs
 
 
 def test_request_mixin():

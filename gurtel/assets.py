@@ -1,6 +1,32 @@
+import os
+
 from rcssmin import cssmin
+from webassets import Environment
 from webassets.filter import register_filter, Filter
 from webassets.loaders import YAMLLoader
+
+
+class AssetHandler(object):
+    """
+    Encapsulates handling of static assets for a Gurtel app.
+
+    Given a static assets directory ``static_dir`` and a static assets URL
+    ``static_url`` (and a ``minify`` boolean defaulting to ``True``),
+    configures a webassets Environment accordingly and registers all static
+    asset bundles described in ``static_dir/bundles.yml``.
+
+    """
+    def __init__(self, directory, url, minify=True):
+        self.directory = directory
+        self.url = url
+        self.assets_env = Environment(
+            directory,
+            url,
+            debug=not minify,
+            )
+        self.assets_env.register(
+            get_bundles(os.path.join(directory, 'bundles.yml')))
+
 
 
 class RCSSMin(Filter):

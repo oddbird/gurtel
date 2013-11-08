@@ -1,8 +1,30 @@
 from cStringIO import StringIO
 import os
 
+import pytest
+
 from gurtel import assets
 
+
+@pytest.fixture
+def static_dir(testapp_base_dir):
+    return os.path.join(testapp_base_dir, 'static')
+
+
+
+@pytest.fixture
+def handler(static_dir):
+    return assets.AssetHandler(static_dir, '/static/', minify=False)
+
+
+
+class TestAssetHandler(object):
+    def test_assets_env_config(self, handler, static_dir):
+        """Instantiates and configures a webassets Environment."""
+        assert handler.directory == handler.assets_env.directory == static_dir
+        assert handler.url == handler.assets_env.url == '/static/'
+        assert handler.assets_env.config['debug']
+        assert 'css' in handler.assets_env
 
 
 def test_rcssmin(monkeypatch):
