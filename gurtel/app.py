@@ -10,7 +10,6 @@ from werkzeug.wrappers import Request as WerkzeugRequest
 from werkzeug.wsgi import SharedDataMiddleware
 
 
-
 def redirect_if(request_test, redirect_to):
     """
     Factory for decorator to redirect if request doesn't pass a test.
@@ -38,10 +37,8 @@ def redirect_if(request_test, redirect_to):
     return _decorator
 
 
-
 class Request(WerkzeugRequest, flash.FlashRequestMixin):
     pass
-
 
 
 class GurtelApp(object):
@@ -84,11 +81,9 @@ class GurtelApp(object):
             self.wsgi_app = SharedDataMiddleware(
                 self.wsgi_app, {self.assets.url: self.assets.directory})
 
-
     def make_absolute_url(self, url):
         """Make a relative URL absolute by prepending ``self.base_url``."""
         return urlparse.urljoin(self.base_url, url)
-
 
     def redirect_to(self, url_or_endpoint, **kwargs):
         """
@@ -105,17 +100,14 @@ class GurtelApp(object):
 
         return redirect(self.make_absolute_url(url))
 
-
     def url_for(self, endpoint, **kwargs):
         """Build a URL for an endpoint and args."""
         return self.dispatcher.url_for(self.server_host, endpoint, **kwargs)
-
 
     @cached_property
     def is_ssl(self):
         """Return ``True`` if the app is configured to serve over HTTPS."""
         return self.server_scheme == 'https'
-
 
     def wsgi_app(self, environ, start_response):
         """WSGI entry point. Call ``dispatch()``, handle middleware."""
@@ -130,7 +122,6 @@ class GurtelApp(object):
         except HTTPException as e:
             response = e
         return response(environ, start_response)
-
 
     def __call__(self, environ, start_response):
         """Make the app directly callable."""

@@ -6,10 +6,8 @@ from werkzeug.contrib.securecookie import SecureCookie
 from . import timezone
 
 
-
 class JSONSecureCookie(SecureCookie):
     serialization_method = json
-
 
 
 def session_middleware(request, response_callable):

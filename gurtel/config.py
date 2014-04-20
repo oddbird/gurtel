@@ -14,7 +14,6 @@ class Config(object):
         # Maps keys to their source file (if any)
         self.sourcemap = {}
 
-
     def read_from_file(self, conf_file):
         """
         Read config from an ini-style config file.
@@ -40,7 +39,6 @@ class Config(object):
 
         return self
 
-
     def read_from_env(self, prefix, env=None):
         """
         Read config from given env dict (``os.environ`` by default).
@@ -62,13 +60,11 @@ class Config(object):
 
         return self
 
-
     def update(self, d):
         """Update config from a dict."""
         self.data.update(d)
         for k in d:
             self.sourcemap[k] = None
-
 
     def copy(self):
         """Return a copy of this config."""
@@ -77,30 +73,24 @@ class Config(object):
 
         return c
 
-
     def get(self, key, default=None):
         """Proxy .get() to config dict."""
         return self.data.get(key, default)
-
 
     def __getitem__(self, key):
         """Proxy __getitem__ to config dict."""
         return self.data[key]
 
-
     def __contains__(self, key):
         """Proxy __contains__ to config dict."""
         return key in self.data
-
 
     def keys(self):
         """Proxy keys() to config dict."""
         return self.data.keys()
 
-
     truthy = frozenset({'y', 'yes', 't', 'true', '1', 'on', True})
     falsy = frozenset({'n', 'no', 'f', 'false', '0', 'off', False})
-
 
     def getbool(self, key, default=NOT_PROVIDED):
         """

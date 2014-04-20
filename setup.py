@@ -8,6 +8,7 @@ long_description = (open(join(here, "README.rst")).read() + "\n\n" +
                     open(join(here, "CHANGES.rst")).read() + "\n\n" +
                     open(join(here, "TODO.rst")).read())
 
+
 def get_version():
     fh = open(join(here, "gurtel", "__init__.py"))
     try:
@@ -48,7 +49,7 @@ setup(
         "pytz",
         "requests",
         ],
-    entry_points = {
+    entry_points={
         'pytest11': [
             'gurtel = gurtel.pytest_plugin',
             ]

@@ -28,7 +28,6 @@ class AssetHandler(object):
             get_bundles(os.path.join(directory, 'bundles.yml')))
 
 
-
 class RCSSMin(Filter):
     """Minifies CSS using the rCSSmin library."""
 

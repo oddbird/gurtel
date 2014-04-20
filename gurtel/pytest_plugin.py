@@ -4,7 +4,7 @@ import pytest
 
 
 def pytest_addoption(parser):
-    group = parser.getgroup("OddBooks")
+    group = parser.getgroup("Gurtel")
     group.addoption(
         "--config",
         dest="config",

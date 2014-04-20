@@ -15,7 +15,6 @@ class TemplateRenderer(object):
             self.jinja_env.assets_environment = asset_handler.assets_env
         self.context_processors = context_processors or []
 
-
     def render(self, request, template_name, context=None,
                mimetype='text/html'):
         """Request-aware template render."""
@@ -23,7 +22,6 @@ class TemplateRenderer(object):
         for cp in self.context_processors:
             context.update(cp(request))
         return self.render_template(template_name, context, mimetype)
-
 
     def render_template(self, template_name, context=None,
                         mimetype='text/html'):

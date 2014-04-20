@@ -6,7 +6,6 @@ import pytest
 from gurtel import templates
 
 
-
 @pytest.fixture
 def tpl(request, testapp_base_dir):
     kwargs = {}
@@ -17,7 +16,6 @@ def tpl(request, testapp_base_dir):
         **kwargs)
 
 
-
 class TestTemplateRenderer(object):
     def test_render_custom_mime_type(self, tpl):
         """Render can take a custom mime type."""
@@ -25,13 +23,11 @@ class TestTemplateRenderer(object):
 
         assert resp.mimetype == 'text/plain'
 
-
     def test_render_template_custom_mime_type(self, tpl):
         """Render template can take a custom mime type."""
         resp = tpl.render_template('text.txt', mimetype='text/plain')
 
         assert resp.mimetype == 'text/plain'
-
 
     @pytest.mark.tpl_kwargs(
         {'context_processors': [lambda req: {'flash': req.flash_messages}]})
@@ -41,7 +37,6 @@ class TestTemplateRenderer(object):
         resp = tpl.render(req, 'flash.html')
 
         assert resp.data == '\n  yay for you.\n'
-
 
     @pytest.mark.tpl_kwargs(
         {'asset_handler': stub(assets_env='fake assets env')})

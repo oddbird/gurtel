@@ -5,7 +5,6 @@ from werkzeug.routing import Map, Rule
 from werkzeug.wrappers import Response
 
 
-
 TESTAPP_BASE_DIR = os.path.join(os.path.dirname(__file__), 'testapp')
 
 
@@ -14,10 +13,8 @@ def testapp_base_dir():
     return TESTAPP_BASE_DIR
 
 
-
 def handle_thing(request, thing_id):
     return Response("thing id: %s" % thing_id)
-
 
 
 @pytest.fixture

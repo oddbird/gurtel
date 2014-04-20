@@ -15,7 +15,6 @@ class TestConfigureLogging(object):
             disable_existing_loggers=False,
             )
 
-
     @mock.patch('logging.config.fileConfig')
     def test_no_logging(self, mock_fileConfig):
         """Does not configure logging if no config key found."""

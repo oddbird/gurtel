@@ -5,7 +5,6 @@ import pytest
 from gurtel.config import Config
 
 
-
 @pytest.mark.configfile_contents("[database]\nuri = sqlite:///")
 def test_read_from_file(configfile):
     c = Config().read_from_file(configfile)

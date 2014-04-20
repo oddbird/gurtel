@@ -11,11 +11,9 @@ def static_dir(testapp_base_dir):
     return os.path.join(testapp_base_dir, 'static')
 
 
-
 @pytest.fixture
 def handler(static_dir):
     return assets.AssetHandler(static_dir, '/static/', minify=False)
-
 
 
 class TestAssetHandler(object):

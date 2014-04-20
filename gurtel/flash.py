@@ -19,7 +19,6 @@ class FlashRequestMixin(object):
         return Flash(self.session)
 
 
-
 class Flash(object):
     """
     Session-based flash messaging.
@@ -32,11 +31,9 @@ class Flash(object):
         self.session = session
         self.key = key
 
-
     @cached_property
     def messages(self):
         return self.session.setdefault(self.key, [])
-
 
     def send(self, level, message):
         """Send a flash message."""
@@ -44,26 +41,21 @@ class Flash(object):
         # so inserting at the beginning preserves FIFO.
         self.messages.insert(0, {'level': level, 'message': message})
 
-
     def success(self, message):
         """Shortcut for sending a message with level 'success'."""
         self.send('success', message)
-
 
     def info(self, message):
         """Shortcut for sending a message with level 'success'."""
         self.send('info', message)
 
-
     def warning(self, message):
         """Shortcut for sending a message with level 'success'."""
         self.send('warning', message)
 
-
     def error(self, message):
         """Shortcut for sending a message with level 'success'."""
         self.send('error', message)
-
 
     def get_and_clear(self):
         while self.messages:

@@ -16,7 +16,6 @@ def test_annotates_request():
     assert request.session.secret_key == 'secret'
 
 
-
 @patch.object(session.JSONSecureCookie, 'save_cookie')
 def test_sets_cookie_on_response(mock_save_cookie):
     """Calls ``save_cookie`` on response."""
