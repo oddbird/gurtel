@@ -15,10 +15,13 @@ def session_middleware(request, response_callable):
     request.session = JSONSecureCookie.load_cookie(
         request, secret_key=request.app.secret_key)
     response = response_callable(request)
-    request.session.save_cookie(
-        response,
-        httponly=True,
-        secure=request.app.is_ssl,
-        expires=timezone.now() + timedelta(days=14),
-        )
+    cookie_kwargs = {
+        'httponly': True,
+        'secure': request.app.is_ssl,
+    }
+    expiry_minutes = request.app.config.get('session.expiry_minutes', None)
+    if expiry_minutes is not None:
+        delta = timedelta(minutes=expiry_minutes)
+        cookie_kwargs['expires'] = timezone.now() + delta
+    request.session.save_cookie(response, **cookie_kwargs)
     return response
