@@ -48,10 +48,16 @@ class GurtelApp(object):
                  context_processors=None):
         self.config = config
         self.base_dir = base_dir
-        self.dispatcher = dispatcher or dispatch.NullDispatcher()
         self.request_class = request_class
         self.middlewares = list(
             middlewares or []) + [session.session_middleware]
+
+        self.dispatcher = dispatcher or dispatch.NullDispatcher()
+        response_callable = self.dispatcher.dispatch
+        for middleware in reversed(self.middlewares):
+            response_callable = partial(
+                middleware, response_callable=response_callable)
+        self.dispatch = response_callable
 
         self.base_url = config.get('app.base_url', 'http://localhost')
         bits = urlparse.urlparse(self.base_url)
@@ -110,15 +116,11 @@ class GurtelApp(object):
         return self.server_scheme == 'https'
 
     def wsgi_app(self, environ, start_response):
-        """WSGI entry point. Call ``dispatch()``, handle middleware."""
+        """WSGI entry point."""
         request = self.request_class(environ)
         request.app = self
-        response_callable = self.dispatcher.dispatch
-        for middleware in reversed(self.middlewares):
-            response_callable = partial(
-                middleware, response_callable=response_callable)
         try:
-            response = response_callable(request)
+            response = self.dispatch(request)
         except HTTPException as e:
             response = e
         return response(environ, start_response)
