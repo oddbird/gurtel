@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.7.1 (2014.05.20)
+------------------
+
+- Fix type coercion of session.expiry_minutes.
+
 0.7.0 (2014.05.20)
 ------------------
 
