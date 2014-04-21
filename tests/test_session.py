@@ -42,7 +42,7 @@ def test_can_set_expiry(mock_now, mock_save_cookie):
         app=stub(
             secret_key='secret',
             is_ssl=True,
-            config={'session.expiry_minutes': 60*24},
+            config={'session.expiry_minutes': '1440'},
         ),
     )
     response = stub()

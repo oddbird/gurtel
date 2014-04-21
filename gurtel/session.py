@@ -19,8 +19,9 @@ def session_middleware(request, response_callable):
         'httponly': True,
         'secure': request.app.is_ssl,
     }
-    expiry_minutes = request.app.config.get('session.expiry_minutes', None)
-    if expiry_minutes is not None:
+    expiry_minutes = int(
+        request.app.config.get('session.expiry_minutes', 0))
+    if expiry_minutes:
         delta = timedelta(minutes=expiry_minutes)
         cookie_kwargs['expires'] = timezone.now() + delta
     request.session.save_cookie(response, **cookie_kwargs)
