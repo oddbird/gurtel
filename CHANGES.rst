@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.7.2 (2014.10.30)
+------------------
+
+- Fix Flash implementation for smarter ModificationTrackingDict in newer Werkzeug.
+
 0.7.1 (2014.05.20)
 ------------------
 
