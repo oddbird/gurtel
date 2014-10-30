@@ -40,6 +40,7 @@ class Flash(object):
         # We iterate through messages in reverse order due to the use of pop(),
         # so inserting at the beginning preserves FIFO.
         self.messages.insert(0, {'level': level, 'message': message})
+        self.session.modified = True
 
     def success(self, message):
         """Shortcut for sending a message with level 'success'."""
@@ -59,4 +60,6 @@ class Flash(object):
 
     def get_and_clear(self):
         while self.messages:
-            yield self.messages.pop()
+            msg = self.messages.pop()
+            self.session.modified = True
+            yield msg
