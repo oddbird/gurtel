@@ -37,11 +37,3 @@ class TestTemplateRenderer(object):
         resp = tpl.render(req, 'flash.html')
 
         assert resp.data == '\n  yay for you.\n'
-
-    @pytest.mark.tpl_kwargs(
-        {'asset_handler': stub(assets_env='fake assets env')})
-    def test_assets_extension(self, tpl):
-        """If an AssetHandler is passed in, configures AssetsExtension."""
-        assert tpl.jinja_env.assets_environment == 'fake assets env'
-        assert (
-            'webassets.ext.jinja2.AssetsExtension' in tpl.jinja_env.extensions)

@@ -4,9 +4,6 @@ Werkzeug==0.9.6
 Jinja2==2.6
 
 pytz==2013b
-webassets==0.8
-rcssmin==1.0.2
-PyYAML==3.10
 requests==1.2.0
 
 pytest==2.3.4

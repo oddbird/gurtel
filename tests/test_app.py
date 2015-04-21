@@ -59,12 +59,6 @@ class TestGurtelAppConfig(object):
         assert app.server_scheme == 'https'
         assert app.server_host == 'example.com'
 
-    def test_static_url(self):
-        """Static url can be passed in from config."""
-        app = self.get_app({'assets.url': 'https://example.com'})
-
-        assert app.assets.url == 'https://example.com'
-
     @mock.patch('gurtel.app.DebuggedApplication')
     @pytest.mark.parametrize('tf', [True, False])
     def test_debugger(self, mock_DebuggedApplication, tf):
@@ -72,14 +66,6 @@ class TestGurtelAppConfig(object):
         self.get_app({'app.debugger': str(tf)})
 
         assert bool(mock_DebuggedApplication.call_count) == tf
-
-    @mock.patch('gurtel.app.SharedDataMiddleware')
-    @pytest.mark.parametrize('tf', [True, False])
-    def test_static(self, mock_SharedDataMiddleware, tf):
-        """Static files serving enabled only if configured."""
-        self.get_app({'app.serve_static': str(tf)})
-
-        assert bool(mock_SharedDataMiddleware.call_count) == tf
 
     def get_app(self, config_dict):
         """Shortcut for creating app with given config data."""

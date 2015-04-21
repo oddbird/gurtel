@@ -1,5 +1,4 @@
 from jinja2 import Environment, FileSystemLoader
-from webassets.ext.jinja2 import AssetsExtension
 from werkzeug.wrappers import Response
 
 
@@ -9,10 +8,7 @@ class TemplateRenderer(object):
         self.jinja_env = Environment(
             loader=FileSystemLoader(template_dir),
             autoescape=True,
-            extensions=[AssetsExtension] if asset_handler else [],
             )
-        if asset_handler:
-            self.jinja_env.assets_environment = asset_handler.assets_env
         self.context_processors = context_processors or []
 
     def render(self, request, template_name, context=None,

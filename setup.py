@@ -43,9 +43,6 @@ setup(
     install_requires=[
         "Werkzeug>=0.8",
         "Jinja2>=2.6",
-        "webassets>=0.8",
-        "rcssmin>=1.0",
-        "PyYAML",
         "pytz",
         "requests",
         ],

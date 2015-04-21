@@ -2,12 +2,11 @@ from functools import wraps, partial
 import os
 import urlparse
 
-from gurtel import assets, dispatch, flash, session, templates
+from gurtel import dispatch, flash, session, templates
 from werkzeug.debug import DebuggedApplication
 from werkzeug.exceptions import HTTPException
 from werkzeug.utils import cached_property, redirect
 from werkzeug.wrappers import Request as WerkzeugRequest
-from werkzeug.wsgi import SharedDataMiddleware
 
 
 def redirect_if(request_test, redirect_to):
@@ -66,26 +65,15 @@ class GurtelApp(object):
 
         self.secret_key = config['app.secret_key']
 
-        self.assets = assets.AssetHandler(
-            directory=os.path.join(base_dir, 'static'),
-            url=config.get('assets.url', '/static/'),
-            minify=config.getbool('assets.minify', True),
-            )
-
         context_processors = list(
             context_processors or []) + [flash.context_processor]
         self.tpl = templates.TemplateRenderer(
             template_dir=os.path.join(base_dir, 'templates'),
-            asset_handler=self.assets,
             context_processors=context_processors,
             )
 
         if config.getbool('app.debugger', False):
             self.wsgi_app = DebuggedApplication(self.wsgi_app, evalex=True)
-
-        if config.getbool('app.serve_static', False):
-            self.wsgi_app = SharedDataMiddleware(
-                self.wsgi_app, {self.assets.url: self.assets.directory})
 
     def make_absolute_url(self, url):
         """Make a relative URL absolute by prepending ``self.base_url``."""
